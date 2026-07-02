@@ -43,7 +43,7 @@ Ask the user to open this URL in their browser and paste the JSON output:
 <apps-script-url>?start=YYYY-MM-DD&end=YYYY-MM-DD&user=<email>&userName=<Full%20Name>
 ```
 
-Save the pasted JSON to `/tmp/status-report-data.json`.
+Save the pasted JSON to `tmp/workspace-data-YYYY-MM-DD.json` (using the report end date) inside the project directory. Never use `/tmp/` or any path outside the project.
 
 The JSON contains these top-level keys. Each section may have an `error` field if that data source failed -- note any errors but continue with available data.
 
@@ -58,10 +58,10 @@ The JSON contains these top-level keys. Each section may have an `error` field i
 Run the GitHub fetch script:
 
 ```
-cd <skill-directory>/scripts && node fetch-github.js --user <github-username> --start YYYY-MM-DD --end YYYY-MM-DD
+cd <skill-directory>/scripts && node fetch-github.js --user <github-username> --start YYYY-MM-DD --end YYYY-MM-DD --output <project-dir>/tmp/github-activity-YYYY-MM-DD.json
 ```
 
-The script prints the output file path (default `/tmp/github-activity.json`). Read that file. It contains:
+The script prints the output file path. Read that file. It contains:
 
 - `commits` -- `total_count`, `repos[]` (full org/repo names), `details[]` with `repo`, `message`, `date`, `url`
 - `pull_requests_opened`, `pull_requests_merged`, `pull_requests_reviewed` -- each with `total_count` and `details[]`
@@ -82,7 +82,7 @@ If the Slack MCP is available, run three searches (use the date range from Phase
 
 Deduplicate across all three result sets (the same message can appear in multiple searches).
 
-Save the combined Slack results to `/tmp/slack-activity.json` for reference.
+Save the combined Slack results to `tmp/slack-activity-YYYY-MM-DD.json` (using the report end date) inside the project directory for reference.
 
 Note: The Slack MCP uses browser session tokens, not an OAuth app. If the tokens have expired, the API calls will fail. Tell the user to refresh their tokens (see README) and skip Slack data for this run.
 
@@ -179,10 +179,16 @@ Generate the report in two formats:
 
 2. **Google Docs HTML** -- Also generate an HTML version using the template at `templates/status-report.html`. Read the template, replace `{{TITLE}}` with the report header (e.g., "Jane Smith - Week of Feb 23") and `{{CONTENT}}` with the report body converted to HTML:
    - Report header becomes `<p class="report-header">...</p>`
-   - Each activity bullet becomes a `<p>` tag. Wrap links in `<a href="...">` tags.
+   - Stats line becomes `<p class="stats-line">N customer engagements &middot; N documents &middot; N repos</p>` -- derive counts from the report content (meetings, documents, repos, releases, etc.), separated by middot (`&middot;`)
+   - Highlights box becomes `<div class="highlights"><p class="highlights-label">highlights:</p><ul><li>...</li></ul></div>` -- pick the 3-5 most impactful items from the week, each as a short `<li>` with `<b>` lead text
+   - Group activity items under section labels when 2+ items fit a natural category. Each section label becomes `<p class="section-label">category name:</p>` followed by a `<ul>` list. Common categories include customer engagement, partner work, content, labs, internal -- but let the actual data determine the groupings each week. Single items that don't fit a group can go in the nearest related section.
+   - Each activity item becomes a `<li>` with the leading phrase wrapped in `<span class="lead">` for scannability. The lead text is the natural subject (person, project, event name) before the first separator dash.
+   - Use single dashes (` - `) as separators between lead text and description. Never use em dashes (`&mdash;`) or en dashes (`&ndash;`), and never use HTML smart quotes (`&ldquo;`, `&rdquo;`, `&rsquo;`). Use plain ASCII characters throughout.
+   - Related items can nest with `<ul>` inside a parent `<li>` (e.g., multiple customer accounts under one event, sub-topics under a partner sync).
+   - Wrap links in `<a href="...">` tags.
    - The `documents:` label becomes `<p class="section-label">documents:</p>` followed by a `<ul>` list where each document is an `<li>` with its link as an `<a>` tag.
    - The `development:` label becomes `<p class="section-label">development:</p>` followed by a `<ul>` list where each repo entry is an `<li>` with the repo name wrapped in `<span class="dev-repo">`.
-   - Save the HTML file to `~/Desktop/status-report-YYYY-MM-DD.html` (using the end date).
+   - Save the HTML file to `reports/YYYY-MM/html/status-report-YYYY-MM-DD.html` (using the end date, inside the project directory).
 
 The HTML version uses Red Hat fonts and styling that paste cleanly into Google Docs: open the HTML file in a browser, select all (Cmd+A), copy (Cmd+C), and paste into Google Docs (Cmd+V). Formatting is preserved.
 
@@ -239,7 +245,7 @@ org/ssl-certs, org/mcp-tools, org/service-config: Applied minor configuration ch
 ## Phase 5: Review
 
 1. The report is already displayed in the code block with a copy button
-2. Tell the user: "I also saved an HTML version to ~/Desktop/status-report-YYYY-MM-DD.html. Open it in your browser, select all, and paste into Google Docs for formatted output with Red Hat fonts."
+2. Tell the user: "I also saved an HTML version to reports/YYYY-MM/html/status-report-YYYY-MM-DD.html. Open it in your browser, select all, and paste into Google Docs for formatted output with Red Hat fonts."
 3. Ask: "Would you like to adjust anything?"
 4. If the user requests changes, regenerate both the code block and the HTML file
 
