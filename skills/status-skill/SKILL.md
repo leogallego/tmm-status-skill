@@ -173,59 +173,49 @@ If Slack data was already fetched automatically in Phase 1, skip this phase enti
 
 ## Phase 4: Generate Report
 
-Generate the report in two formats:
+Generate the report as a **markdown file**, then run the conversion script to produce HTML and Slack versions.
 
-1. **Plain text** -- Output inside a fenced code block (```text) so the user gets a copy button. Keep the report as plain text with no markdown formatting (`#`, `**`, backticks) inside the report body.
+### Step 1: Generate Markdown
 
-2. **Google Docs HTML** -- Also generate an HTML version using the template at `templates/status-report.html`. Read the template, replace `{{TITLE}}` with the report header (e.g., "Jane Smith - Week of Feb 23") and `{{CONTENT}}` with the report body converted to HTML:
-   - Report header becomes `<p class="report-header">...</p>`
-   - Stats line becomes `<p class="stats-line">N customer engagements &middot; N documents &middot; N repos</p>` -- derive counts from the report content (meetings, documents, repos, releases, etc.), separated by middot (`&middot;`)
-   - Highlights box becomes `<div class="highlights"><p class="highlights-label">highlights:</p><ul><li>...</li></ul></div>` -- pick the 3-5 most impactful items from the week, each as a short `<li>` with `<b>` lead text
-   - Group activity items under section labels when 2+ items fit a natural category. Each section label becomes `<p class="section-label">category name:</p>` followed by a `<ul>` list. Common categories include customer engagement, partner work, content, labs, internal -- but let the actual data determine the groupings each week. Single items that don't fit a group can go in the nearest related section.
-   - Each activity item becomes a `<li>` with the leading phrase wrapped in `<span class="lead">` for scannability. The lead text is the natural subject (person, project, event name) before the first separator dash.
-   - Use single dashes (` - `) as separators between lead text and description. Never use em dashes (`&mdash;`) or en dashes (`&ndash;`), and never use HTML smart quotes (`&ldquo;`, `&rdquo;`, `&rsquo;`). Use plain ASCII characters throughout.
-   - Related items can nest with `<ul>` inside a parent `<li>` (e.g., multiple customer accounts under one event, sub-topics under a partner sync).
-   - Wrap links in `<a href="...">` tags.
-   - The `documents:` label becomes `<p class="section-label">documents:</p>` followed by a `<ul>` list where each document is an `<li>` with its link as an `<a>` tag.
-   - The `development:` label becomes `<p class="section-label">development:</p>` followed by a `<ul>` list where each repo entry is an `<li>` with the repo name wrapped in `<span class="dev-repo">`.
-   - Save the HTML file to `reports/YYYY-MM/html/status-report-YYYY-MM-DD.html` (using the end date, inside the project directory).
+Write the report as a markdown file to `reports/YYYY-MM/status-report-YYYY-MM-DD.md` (using the end date). Use this structure:
 
-The HTML version uses Red Hat fonts and styling that paste cleanly into Google Docs: open the HTML file in a browser, select all (Cmd+A), copy (Cmd+C), and paste into Google Docs (Cmd+V). Formatting is preserved.
+```markdown
+# [User's Full Name] - Week of [Month Day]
 
-### Report format
+[N] things | [N] other things | [N] repos
 
-```
-[User's Full Name] - Week of [Month Day]
+## Highlights
 
-[Activity bullet] - include context on who, why, and link to artifacts where available
-[Activity bullet] - note WIP items inline (e.g., "WIP - deck in progress")
-[Activity bullet] - name customers, partners, and teammates involved
-documents:
-[Doc/Slides name] - [purpose, e.g., "customer pitch deck for Acme Corp"] (link)
-development:
-[org/repo-name]: [Outcome-focused description of what was done and why]
-[org/repo-name]: [Another outcome]
+- **Lead text** - short description of impact
+- **Lead text** - short description of impact
+
+## [Section Name]
+
+- **Lead text** - description with context on who, why, and link to artifacts
+- **Lead text** - description
+  - **Sub-item lead** - nested detail
+
+## Documents
+
+- Doc name ([link](url))
+
+## Development
+
+- **org/repo-name**: Outcome-focused description of what was done and why
 ```
 
-### Example
+### Markdown format rules
 
-```
-Jane Smith - Week of Feb 23
-
-Internal Nasdaq Sync [Teleport] - helping out teammate on migration blockers
-Enablement sync with Pat Lee to review AIOps training delivery plan
-Helping Dana Kim with Acme Corp (as a customer) - networking architecture questions, looping in the database team
-Webinar planning sync - Q1 AIOps webinar tracker
-Internal AI training coordination with Alex Chen - product pitch prep
-documents:
-AIOps Workshop Deck - updated exercises for platform v6.18 (link)
-Q1 Planning Doc - created new quarterly objectives tracker (link)
-development:
-org/api-gateway: Resolved two critical issues with authentication handling and CI build failures, updated entrypoint script and project docs.
-org/workshops: Updated workshop exercises to reflect platform version migration from 6.15 to 6.18.
-org/product-demos: Cross-team code review for updates to the demo bootstrap branch.
-org/ssl-certs, org/mcp-tools, org/service-config: Applied minor configuration changes and documentation updates across these projects.
-```
+- `#` for the report header (name and week)
+- First line after the header: stats line with counts separated by `|`
+- `## Highlights` with 3-5 top items, each as `- **Lead** - description`
+- `##` sections for grouping activity items when 2+ items fit a natural category. Common categories include Customer Engagement, Partner Work, Content, Labs, Internal -- but let the actual data determine the groupings each week. Use Title Case for section names.
+- Each activity item as `- **Lead text** - description`. The lead is the natural subject (person, project, event name) before the separator dash.
+- Nested items indented with 2 spaces: `  - **Sub-item** - description`
+- Links as standard markdown: `[text](url)`
+- Use single dashes (` - `) as separators. Never use em dashes or smart quotes.
+- `## Documents` with `- Doc name ([link](url))` for each
+- `## Development` with `- **org/repo**: description` for each repo
 
 ### Writing guidelines
 
@@ -234,20 +224,69 @@ org/ssl-certs, org/mcp-tools, org/service-config: Applied minor configuration ch
 - **Name names** -- customers, partners, teammates involved
 - **Link to artifacts** -- YouTube videos, Slack threads, docs, decks, Gemini notes
 - **Mark WIP inline** -- "WIP - Network Refresh 2026" not a separate section
-- **Separate document work** -- list under "documents:" with name, purpose, and link
-- **Separate development work** -- list under "development:" with org/repo prefix
 - **Describe outcomes not git mechanics** -- "Resolved critical CI pipeline issues" not "pushed 5 commits"
 - **Always use full org/repo names** -- `myorg/my-project` not `my-project`
 - **Group related small items** -- "org/ssl-certs, org/mcp-tools: Applied minor config changes across these projects"
 - **Skip routine meetings** -- don't list daily standups or recurring syncs unless something notable happened
-- **No tables or formal headers** -- keep it flat and scannable
+
+### Example
+
+```markdown
+# Jane Smith - Week of Feb 23
+
+3 customer meetings | 2 documents | 4 repos
+
+## Highlights
+
+- **Acme Corp architecture review** - networking architecture questions resolved, database team looped in
+- **AIOps workshop updated** - exercises migrated to platform v6.18
+
+## Customer Engagement
+
+- **Acme Corp** (Dana Kim) - networking architecture questions, looping in the database team
+- **Nasdaq Sync** [Teleport] - helping out teammate on migration blockers
+
+## Internal
+
+- **Enablement sync with Pat Lee** - reviewed AIOps training delivery plan
+- **Webinar planning sync** - Q1 AIOps webinar tracker
+- **AI training coordination with Alex Chen** - product pitch prep
+
+## Documents
+
+- AIOps Workshop Deck - updated exercises for platform v6.18 ([link](https://example.com/deck))
+- Q1 Planning Doc - created new quarterly objectives tracker ([link](https://example.com/doc))
+
+## Development
+
+- **org/api-gateway**: Resolved two critical issues with authentication handling and CI build failures, updated entrypoint script and project docs.
+- **org/workshops**: Updated workshop exercises to reflect platform version migration from 6.15 to 6.18.
+- **org/product-demos**: Cross-team code review for updates to the demo bootstrap branch.
+- **org/ssl-certs, org/mcp-tools, org/service-config**: Applied minor configuration changes and documentation updates across these projects.
+```
+
+### Step 2: Convert to HTML and Slack
+
+After generating the markdown file, run the conversion script:
+
+```
+cd <skill-directory>/scripts && node convert-report.js \
+  --input <project-dir>/reports/YYYY-MM/status-report-YYYY-MM-DD.md \
+  --html <project-dir>/reports/YYYY-MM/html/status-report-YYYY-MM-DD.html \
+  --slack <project-dir>/reports/YYYY-MM/slack/status-report-YYYY-MM-DD.txt \
+  --template <skill-directory>/templates/status-report.html
+```
+
+The script uses `marked` (vendored at `scripts/vendor/marked.js`) to parse the markdown and produces:
+- **HTML** with Red Hat fonts and styling that pastes cleanly into Google Docs (open in browser, select all, paste)
+- **Slack mrkdwn** that pastes directly into Slack with bold leads, blockquote highlights, and formatted links
 
 ## Phase 5: Review
 
-1. The report is already displayed in the code block with a copy button
-2. Tell the user: "I also saved an HTML version to reports/YYYY-MM/html/status-report-YYYY-MM-DD.html. Open it in your browser, select all, and paste into Google Docs for formatted output with Red Hat fonts."
+1. Output the markdown report inside a fenced code block (```markdown) so the user gets a copy button
+2. Tell the user: "I also generated an HTML version at reports/YYYY-MM/html/status-report-YYYY-MM-DD.html (open in browser, select all, paste into Google Docs) and a Slack version at reports/YYYY-MM/slack/status-report-YYYY-MM-DD.txt (copy and paste into Slack)."
 3. Ask: "Would you like to adjust anything?"
-4. If the user requests changes, regenerate both the code block and the HTML file
+4. If the user requests changes, regenerate the markdown file and re-run the conversion script
 
 ## Error Handling
 
