@@ -1,29 +1,28 @@
 #!/usr/bin/env node
 
 /**
- * Convert a markdown status report into HTML and Slack mrkdwn.
+ * Convert a status report into HTML and Slack mrkdwn.
+ *
+ * Supports two input formats (auto-detected):
+ *
+ * 1. Categorized (v3) — plain text with category lines ending in ':'
+ *    Name - Week of Month Day
+ *    Category — tagline:
+ *    - bullet
+ *
+ * 2. Markdown (v2) — markdown with # headers
+ *    # Name - Week of Month Day
+ *    ## Section Name
+ *    - **Lead** - description
  *
  * Usage:
- *   node convert-report.js --input reports/2026-06/status-report-2026-06-07.md \
- *     --html reports/2026-06/html/status-report-2026-06-07.html \
- *     --slack reports/2026-06/slack/status-report-2026-06-07.txt \
+ *   node convert-report.js --input reports/2026-07/status-report-2026-07-05.md \
+ *     --html reports/2026-07/html/status-report-2026-07-05.html \
+ *     --slack reports/2026-07/slack/status-report-2026-07-05.txt \
  *     --template skills/status-skill/templates/status-report.html
  *
- * Input format (markdown):
- *   # Name - Week of Month Day
- *   stats line (counts separated by |)
- *   ## Highlights
- *   - **Lead** - description
- *   ## Section Name
- *   - **Lead** - description
- *     - **Sub-item** - description
- *   ## Documents
- *   - Doc name ([link](url))
- *   ## Development
- *   - **org/repo**: description
- *
  * Dependencies:
- *   marked (vendored at ./vendor/marked.js, v18.x)
+ *   marked (vendored at ./vendor/marked.js, v18.x — only used for v2 format)
  */
 
 import { readFileSync, writeFileSync, mkdirSync } from "fs";
@@ -49,7 +48,56 @@ function parseArgs(args) {
   return parsed;
 }
 
-// --- Parse markdown into structured report ---
+// --- Format detection ---
+
+function isCategorizedFormat(content) {
+  const firstLine = content.split("\n").find(l => l.trim().length > 0) || "";
+  return !firstLine.trim().startsWith("# ");
+}
+
+// --- Parse categorized (v3) format ---
+
+function parseCategorizedReport(content) {
+  const lines = content.split("\n");
+  const report = {
+    header: "",
+    preambleLines: [],
+    sections: [],
+  };
+
+  let headerFound = false;
+  let currentSection = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (!headerFound) {
+      report.header = trimmed;
+      headerFound = true;
+      continue;
+    }
+
+    if (trimmed.endsWith(":") && !trimmed.startsWith("- ")) {
+      currentSection = { name: trimmed, items: [] };
+      report.sections.push(currentSection);
+      continue;
+    }
+
+    if (trimmed.startsWith("- ") && currentSection) {
+      currentSection.items.push(trimmed.slice(2));
+      continue;
+    }
+
+    if (!currentSection) {
+      report.preambleLines.push(trimmed);
+    }
+  }
+
+  return report;
+}
+
+// --- Parse markdown (v2) into structured report ---
 
 function parseReport(content) {
   const tokens = marked.lexer(content);
@@ -286,11 +334,79 @@ function toSlack(report) {
   return out;
 }
 
+// --- Categorized format: HTML conversion ---
+
+function escapeHtml(text) {
+  return text.replace(/&/g, "&amp;");
+}
+
+function categorizedInlineToHtml(text) {
+  let html = escapeHtml(text);
+  html = html.replace(/ — /g, " &mdash; ");
+  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
+  return html;
+}
+
+function categorizedToHtml(report, template) {
+  let content = "";
+
+  content += `<p class="report-header">${escapeHtml(report.header)}</p>\n`;
+
+  for (const line of report.preambleLines) {
+    content += `\n<p>${categorizedInlineToHtml(line)}</p>\n`;
+  }
+
+  for (const section of report.sections) {
+    const label = categorizedInlineToHtml(section.name);
+    content += `\n<p class="section-label">${label}</p>\n`;
+    if (section.items.length > 0) {
+      content += `<ul>\n`;
+      for (const item of section.items) {
+        content += `<li>${categorizedInlineToHtml(item)}</li>\n`;
+      }
+      content += `</ul>\n`;
+    }
+  }
+
+  const title = escapeHtml(report.header);
+  return template
+    .replace("{{TITLE}}", title)
+    .replace("{{CONTENT}}", content);
+}
+
+// --- Categorized format: Slack conversion ---
+
+function categorizedInlineToSlack(text) {
+  return text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "<$2|$1>");
+}
+
+function categorizedToSlack(report) {
+  let out = "";
+
+  out += `*${report.header}*\n`;
+
+  for (const line of report.preambleLines) {
+    out += `\n${line}\n`;
+  }
+
+  for (const section of report.sections) {
+    out += `\n*${section.name}*\n`;
+    for (const item of section.items) {
+      out += `• ${categorizedInlineToSlack(item)}\n`;
+    }
+  }
+
+  return out;
+}
+
 // --- Main ---
 
 const config = parseArgs(process.argv.slice(2));
 const input = readFileSync(config.input, "utf-8");
-const report = parseReport(input);
+const categorized = isCategorizedFormat(input);
+const report = categorized ? parseCategorizedReport(input) : parseReport(input);
+
+console.error(`Detected format: ${categorized ? "categorized (v3)" : "markdown (v2)"}`);
 
 if (config.html) {
   if (!config.template) {
@@ -298,14 +414,14 @@ if (config.html) {
     process.exit(1);
   }
   const template = readFileSync(config.template, "utf-8");
-  const html = toHtml(report, template);
+  const html = categorized ? categorizedToHtml(report, template) : toHtml(report, template);
   mkdirSync(dirname(config.html), { recursive: true });
   writeFileSync(config.html, html);
   console.error(`HTML saved to ${config.html}`);
 }
 
 if (config.slack) {
-  const slack = toSlack(report);
+  const slack = categorized ? categorizedToSlack(report) : toSlack(report);
   mkdirSync(dirname(config.slack), { recursive: true });
   writeFileSync(config.slack, slack);
   console.error(`Slack saved to ${config.slack}`);
@@ -313,5 +429,5 @@ if (config.slack) {
 
 if (!config.html && !config.slack) {
   console.log("=== SLACK ===");
-  console.log(toSlack(report));
+  console.log(categorized ? categorizedToSlack(report) : toSlack(report));
 }

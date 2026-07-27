@@ -151,9 +151,11 @@ Present a brief summary of what was found, then ask targeted questions. The goal
 6. If Slack data was collected: "From Slack, I see you were active in [channels/threads] discussing [topics]. Any key decisions or context to add?"
 7. If correlated items were found, ask about the most significant ones: "I noticed [topic] came up in both your [meeting/email] and Slack conversations with [people]. What was the outcome or current status?" Focus on the top 3-5 correlated items to avoid overwhelming the user.
 8. If Slack-only items were found: "I also saw Slack activity around [topic] that didn't match any meetings or emails. Worth including in your status?"
-9. "Top 2-3 accomplishments this week that might not show up in the data?"
-10. "Any blockers, risks, or items needing escalation?"
-11. "Top priorities for next week?"
+9. "Any private or sensitive conversations I should exclude from the report?"
+10. "Should any items move between categories?"
+11. "Top 2-3 accomplishments this week that might not show up in the data?"
+12. "Any blockers, risks, or items needing escalation?"
+13. "Top priorities for next week?"
 
 Wait for the user to respond before proceeding.
 
@@ -177,92 +179,92 @@ Generate the report as a **markdown file**, then run the conversion script to pr
 
 ### Step 1: Generate Markdown
 
-Write the report as a markdown file to `reports/YYYY-MM/status-report-YYYY-MM-DD.md` (using the end date). Use this structure:
+Write the report as a plain-text markdown file to `reports/YYYY-MM/status-report-YYYY-MM-DD.md` (using the end date). Use this structure:
 
-```markdown
-# [User's Full Name] - Week of [Month Day]
+```
+[User's Full Name] - Week of [Month Day]
 
-[N] things | [N] other things | [N] repos
+AI-Native Developer Experience — building a complete, one-click AI dev environment for Ansible:
+- [Outcome-first bullet with tool name and context]
+- [Another bullet]
 
-## Highlights
+AIOps & Partner Solutions — driving joint business outcomes with partner integrations:
+- [Partner engagement bullet]
 
-- **Lead text** - short description of impact
-- **Lead text** - short description of impact
+Education & Labs — self-service enablement at scale:
+- [Lab/course/enablement bullet]
 
-## [Section Name]
+Communities of Practice & Upstream:
+- [CoP demo, upstream PR, community contribution]
 
-- **Lead text** - description with context on who, why, and link to artifacts
-- **Lead text** - description
-  - **Sub-item lead** - nested detail
+Field & Customer Support:
+- [Customer engagement, SSA/TAM help]
 
-## Documents
-
-- Doc name ([link](url))
-
-## Development
-
-- **org/repo-name**: Outcome-focused description of what was done and why
+Internal:
+- [Admin, quarterly docs, compliance]
+- Recurring: [list of recurring meetings attended]
 ```
 
-### Markdown format rules
+### Format rules
 
-- `#` for the report header (name and week)
-- First line after the header: stats line with counts separated by `|`
-- `## Highlights` with 3-5 top items, each as `- **Lead** - description`
-- `##` sections for grouping activity items when 2+ items fit a natural category. Common categories include Customer Engagement, Partner Work, Content, Labs, Internal -- but let the actual data determine the groupings each week. Use Title Case for section names.
-- Each activity item as `- **Lead text** - description`. The lead is the natural subject (person, project, event name) before the separator dash.
-- Nested items indented with 2 spaces: `  - **Sub-item** - description`
-- Links as standard markdown: `[text](url)`
-- Use single dashes (` - `) as separators. Never use em dashes or smart quotes.
-- `## Documents` with `- Doc name ([link](url))` for each
-- `## Development` with `- **org/repo**: description` for each repo
+- First line: report title (no `#` prefix, no markdown headers anywhere)
+- Lines ending with `:` are category headers (with optional ` — tagline` before the colon)
+- Lines starting with `- ` are items under the nearest preceding category
+- Standalone lines before any category are context/notes (e.g., "Short week — out Tuesday-Thursday")
+- Include the "end goal" tagline on the first 3 categories to connect weekly work to strategic goals
+- Empty categories (no items) are omitted entirely
+- No separate `documents:` or `development:` sections -- fold doc and dev work into activity bullets under the relevant category
+- Recurring meetings go as the last bullet inside Internal, prefixed with "Recurring:"
+- Categories can be added or adapted if new work doesn't fit existing ones. Be consistent across weeks.
+
+### Category placement rules
+
+- **AI-Native Developer Experience**: MCP servers, AI skills, devcontainer templates, developer tooling, IDE integrations
+- **AIOps & Partner Solutions**: NetBox, LogicMonitor, Cisco, Arista -- partner-level engagements. NOT customer work.
+- **Education & Labs**: Lab content creation, lab maintenance, course modules, lab reviews. NOT SSA troubleshooting (that's Field).
+- **Communities of Practice & Upstream**: CoP demos/presentations, upstream PRs to ansible/* repos, community blog contributions.
+- **Field & Customer Support**: Customer engagements (Bancolombia, PBA, etc.), SSA help, TAM support.
+- **Internal**: 1:1 with manager (keep), other recurring 1:1s (drop unless specific topic discussed), quarterly docs, compliance, recurring meetings.
 
 ### Writing guidelines
 
+- **Outcome-first, capability-focused** -- lead with what was accomplished, not the repo name
+- **Name tools explicitly** -- never say "the MCP server" generically. Use the tool name with a descriptor on first mention per report (e.g., "ansible-know-mcp (AI skills and documentation MCP server)")
+- **Fold doc and dev work into activity bullets** -- no separate documents or development sections
 - **Direct and concise** -- write bullets as quick notes, not formal sentences
 - **Include who and why** -- "Met with Acme Corp team including sales and consulting" not just "Customer meeting"
-- **Name names** -- customers, partners, teammates involved
+- **Name names** -- customers, partners, teammates involved. Be specific about roles: SSA, TAM, SPT, PM -- don't guess, ask if unsure
 - **Link to artifacts** -- YouTube videos, Slack threads, docs, decks, Gemini notes
-- **Mark WIP inline** -- "WIP - Network Refresh 2026" not a separate section
 - **Describe outcomes not git mechanics** -- "Resolved critical CI pipeline issues" not "pushed 5 commits"
 - **Always use full org/repo names** -- `myorg/my-project` not `my-project`
 - **Group related small items** -- "org/ssl-certs, org/mcp-tools: Applied minor config changes across these projects"
-- **Skip routine meetings** -- don't list daily standups or recurring syncs unless something notable happened
+- **Drop generic recurring 1:1s** -- only keep focused meetings where a specific topic was discussed
+- **Flag private/sensitive conversations** -- internal strategy discussions, career conversations, unreleased product names should be flagged for user review before including
 
 ### Example
 
-```markdown
-# Jane Smith - Week of Feb 23
+```
+Jane Smith - Week of Feb 23
 
-3 customer meetings | 2 documents | 4 repos
+AI-Native Developer Experience — building a complete, one-click AI dev environment for Ansible:
+- Released v0.5.0 of example-mcp (documentation MCP server) — added search indexing and offline cache, 3 PRs merged
+- Integrated code assistance into the devcontainer template — pre-configured VS Code environment with AI tools out of the box
 
-## Highlights
+AIOps & Partner Solutions — driving joint business outcomes with partner integrations:
+- Working with ExampleCorp on the AIOps solution guide — shared draft demo repo with Pat, coordinating sandbox access
+- Reviewed Cisco Catalyst technical blog draft from Dana
 
-- **Acme Corp architecture review** - networking architecture questions resolved, database team looped in
-- **AIOps workshop updated** - exercises migrated to platform v6.18
+Education & Labs — self-service enablement at scale:
+- Published v0.0.2 of the dev-tools lab on the demo platform — merged the branch, set up deployment, coordinated with Alex
+- Wrote 3 new modules for "Ansible Zero to Hero" (self-paced course) — data protection, execution flow, CI/CD
 
-## Customer Engagement
+Field & Customer Support:
+- Helped Joe (SSA) troubleshoot the EDA workshop — confirmed lab working, pushed content fixes
+- Helped Pat (TAM) with Acme Corp external logging architecture — recommended log aggregator approach
 
-- **Acme Corp** (Dana Kim) - networking architecture questions, looping in the database team
-- **Nasdaq Sync** [Teleport] - helping out teammate on migration blockers
-
-## Internal
-
-- **Enablement sync with Pat Lee** - reviewed AIOps training delivery plan
-- **Webinar planning sync** - Q1 AIOps webinar tracker
-- **AI training coordination with Alex Chen** - product pitch prep
-
-## Documents
-
-- AIOps Workshop Deck - updated exercises for platform v6.18 ([link](https://example.com/deck))
-- Q1 Planning Doc - created new quarterly objectives tracker ([link](https://example.com/doc))
-
-## Development
-
-- **org/api-gateway**: Resolved two critical issues with authentication handling and CI build failures, updated entrypoint script and project docs.
-- **org/workshops**: Updated workshop exercises to reflect platform version migration from 6.15 to 6.18.
-- **org/product-demos**: Cross-team code review for updates to the demo bootstrap branch.
-- **org/ssl-certs, org/mcp-tools, org/service-config**: Applied minor configuration changes and documentation updates across these projects.
+Internal:
+- 1:1 with manager — discussed Q3 priorities and webinar planning
+- Recurring: Team standup, AIOps pillar, Community sync, Study Hall
 ```
 
 ### Step 2: Convert to HTML and Slack

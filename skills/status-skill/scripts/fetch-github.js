@@ -5,7 +5,7 @@
  * Collects: commits, PRs opened/merged/reviewed, issues opened/closed, repos created.
  *
  * Usage:
- *   node fetch-github.js --user anshulbehl [--start 2026-02-02] [--end 2026-02-06] [--output /tmp/github-activity.json]
+ *   node fetch-github.js --user anshulbehl [--start 2026-02-02] [--end 2026-02-06] [--output path/to/output.json]
  */
 
 import { execSync } from "child_process";
@@ -16,7 +16,7 @@ function parseArgs(args) {
     user: null,
     start: null,
     end: null,
-    output: "/tmp/github-activity.json",
+    output: null,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -56,6 +56,10 @@ function parseArgs(args) {
 
     parsed.start = monday.toISOString().slice(0, 10);
     parsed.end = friday.toISOString().slice(0, 10);
+  }
+
+  if (!parsed.output) {
+    parsed.output = `tmp/github-activity-${parsed.start}-to-${parsed.end}.json`;
   }
 
   return parsed;
