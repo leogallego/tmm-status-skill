@@ -13,7 +13,7 @@
       "name": "status-skill",
       "source": "./",
       "description": "Generate weekly status reports by analyzing Google Calendar events, sent emails, Google Meet transcripts, Google Docs/Slides activity, GitHub commits/PRs, and Slack messages.",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "author": {
         "name": "Anshul Behl",
         "email": "abehl@redhat.com"
