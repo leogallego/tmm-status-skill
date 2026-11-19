@@ -342,6 +342,7 @@ function escapeHtml(text) {
 
 function categorizedInlineToHtml(text) {
   let html = escapeHtml(text);
+  html = html.replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
   html = html.replace(/ — /g, " &mdash; ");
   html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2">$1</a>');
   return html;

@@ -43,7 +43,7 @@ Ask the user to open this URL in their browser and paste the JSON output:
 <apps-script-url>?start=YYYY-MM-DD&end=YYYY-MM-DD&user=<email>&userName=<Full%20Name>
 ```
 
-Save the pasted JSON to `tmp/workspace-data-YYYY-MM-DD.json` (using the report end date) inside the project directory. Never use `/tmp/` or any path outside the project.
+Save the pasted JSON to `tmm-jsons/workspace-data-YYYY-MM-DD.json` (using the report end date) inside the project directory. Never use `/tmp/` or any path outside the project. This applies whether the user saved the JSON to a file themselves or pasted it directly into the conversation -- if they paste it, write it to this path yourself before proceeding, so the raw supporting data is always on disk alongside the report.
 
 The JSON contains these top-level keys. Each section may have an `error` field if that data source failed -- note any errors but continue with available data.
 
@@ -58,7 +58,7 @@ The JSON contains these top-level keys. Each section may have an `error` field i
 Run the GitHub fetch script:
 
 ```
-cd <skill-directory>/scripts && node fetch-github.js --user <github-username> --start YYYY-MM-DD --end YYYY-MM-DD --output <project-dir>/tmp/github-activity-YYYY-MM-DD.json
+cd <skill-directory>/scripts && node fetch-github.js --user <github-username> --start YYYY-MM-DD --end YYYY-MM-DD --output <project-dir>/tmm-jsons/github-activity-YYYY-MM-DD.json
 ```
 
 The script prints the output file path. Read that file. It contains:
@@ -82,7 +82,7 @@ If the Slack MCP is available, run three searches (use the date range from Phase
 
 Deduplicate across all three result sets (the same message can appear in multiple searches).
 
-Save the combined Slack results to `tmp/slack-activity-YYYY-MM-DD.json` (using the report end date) inside the project directory for reference.
+Save the combined Slack results to `tmm-jsons/slack-activity-YYYY-MM-DD.json` (using the report end date) inside the project directory for reference.
 
 Note: The Slack MCP uses browser session tokens, not an OAuth app. If the tokens have expired, the API calls will fail. Tell the user to refresh their tokens (see README) and skip Slack data for this run.
 
